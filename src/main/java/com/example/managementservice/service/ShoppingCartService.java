@@ -22,7 +22,7 @@ public class ShoppingCartService {
     private final RestTemplate restTemplate;
     private final ProductService productService;
 
-    private RabbitTemplate rabbitTemplate;
+    private final RabbitTemplate rabbitTemplate;
 
     private final ModelMapper modelMapper;
 
