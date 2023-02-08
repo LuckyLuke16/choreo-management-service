@@ -1,0 +1,139 @@
+version: "3.7"
+services:
+  gateway:
+    image: luckyluke16/choreo-management-service
+    ports:
+      - "8080:8080"
+    environment:
+      - "SPRING_RABBITMQ_HOST=rabbitmq"
+      - "keycloak.auth-server-url=http://host.docker.internal:8079"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    expose:
+      - 8080
+    container_name: gateway
+    depends_on:
+      - auth
+      - rabbitmq
+  product-service:
+    image: luckyluke16/choreo-product-service
+    environment:
+      - "SPRING_RABBITMQ_HOST=rabbitmq"
+      - "SPRING_PROFILES_ACTIVE=prod"
+      - "SPRING_DATASOURCE_URL=jdbc:postgresql://db-choreo-product-service:5432/user"
+    ports:
+      - "8081:8081"
+    expose:
+      - 8081
+    container_name: product-service
+    depends_on:
+      - auth
+      - db-product-service
+      - rabbitmq
+  db-product-service:
+    image: postgres:13.1-alpine
+    container_name: db-choreo-product-service
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=user
+    ports:
+      - "5432:5432"
+    expose:
+      - 5432
+  shopping-cart-service:
+    image: luckyluke16/choreo-shopping-cart-service
+    environment:
+      - "SPRING_RABBITMQ_HOST=rabbitmq"
+      - "SPRING_PROFILES_ACTIVE=prod"
+      - "SPRING_DATASOURCE_URL=jdbc:postgresql://db-choreo-shopping-cart-service/user"
+    ports:
+      - "8082:8082"
+    expose:
+      - 8082
+    container_name: shopping-cart-service
+    depends_on:
+      - auth
+      - db-shopping-cart-service
+      - rabbitmq
+  db-shopping-cart-service:
+    image: postgres:13.1-alpine
+    container_name: db-choreo-shopping-cart-service
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=user
+    ports:
+      - "5433:5432"
+    expose:
+      - 5433
+  payment-service:
+    image: luckyluke16/choreo-payment-service
+    environment:
+      - "SPRING_RABBITMQ_HOST=rabbitmq"
+      - "SPRING_PROFILES_ACTIVE=prod"
+      - "SPRING_DATASOURCE_URL=jdbc:postgresql://db-payment-service/user"
+    ports:
+      - "8083:8083"
+    expose:
+      - 8083
+    container_name: payment-service
+    depends_on:
+      - db-payment-service
+      - rabbitmq
+  db-payment-service:
+    image: postgres:13.1-alpine
+    container_name: db-choreo-payment-service
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=user
+    ports:
+      - "5434:5432"
+    expose:
+      - 5434
+  order-service:
+    image: luckyluke16/choreo-order-service
+    environment:
+      - "SPRING_RABBITMQ_HOST=rabbitmq"
+      - "SPRING_PROFILES_ACTIVE=prod"
+      - "SPRING_DATASOURCE_URL=jdbc:postgresql://db-order-service/user"
+    ports:
+      - "8084:8084"
+    expose:
+      - 8084
+    container_name: order-service
+    depends_on:
+      - db-order-service
+      - rabbitmq
+  db-order-service:
+    image: postgres:13.1-alpine
+    container_name: db-choreo-order-service
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=user
+    ports:
+      - "5435:5432"
+    expose:
+      - 5435
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    expose:
+      - 5672
+  auth:
+    image: quay.io/keycloak/keycloak:20.0.2
+    environment:
+      - "KEYCLOAK_ADMIN=admin"
+      - "KEYCLOAK_ADMIN_PASSWORD=admin"
+    command:
+      - start-dev
+      - --import-realm
+    ports:
+      - "8079:8080"
+    expose:
+      - 8079
+    volumes:
+      - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json
+    container_name: auth
+
